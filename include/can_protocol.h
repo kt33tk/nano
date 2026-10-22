@@ -4,6 +4,13 @@
 #include <stdint.h>
 #include "crc8.h"
 
+typedef enum{
+	AUTO = 1,
+	MANUAL = 2,
+	SAFE = 3,
+	CLEAR_FAULT = 4
+}Control_Status_t;
+
 typedef struct {
     int16_t temperature;
     int16_t humidity;

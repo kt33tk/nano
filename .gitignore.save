@@ -1,0 +1,7 @@
+# 编译生成的目标文件
+*.o
+
+# 编译生成的可执行文件
+can_monitor
+can_send
+can_send_cmd
