@@ -5,3 +5,5 @@
 can_monitor
 can_send
 can_send_cmd
+build/
+can_log.csv
