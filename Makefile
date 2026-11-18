@@ -7,7 +7,10 @@ COMMON_SRC = src/can_protocol.c src/crc8.c
 COMMON_OBJ = $(COMMON_SRC:.c=.o)
 
 # 默认目标：一次编译同时生成两个可执行程序
-all: can_monitor can_send_cmd
+all: can_monitor can_send_cmd ecu_diag
+
+ecu_diag: src/ecu_diag.o
+	$(CC) -o $@ $^
 
 # 链接生成监听工具 can_monitor
 can_monitor: src/can_monitor.o $(COMMON_OBJ)
@@ -23,4 +26,4 @@ src/%.o: src/%.c
 
 # 清理编译产物
 clean:
-	rm -f src/*.o can_monitor can_send_cmd
+	rm -f src/*.o can_monitor can_send_cmd ecu_diag
