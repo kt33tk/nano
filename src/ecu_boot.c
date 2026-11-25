@@ -219,33 +219,42 @@ int main(int argc, char **argv)
     int echo;
 
     if (argc < 4) {
-        fprintf(stderr, "Usage: %s can0 echo LENGTH | can0 req HEX ...\n",
+        fprintf(stderr,
+                "Usage: %s can0 echo LENGTH | can0 req HEX ...\n",
                 argv[0]);
         return 1;
     }
 
     echo = strcmp(argv[2], "echo") == 0;
+
     if (echo && argc == 4) {
         char *end;
         unsigned long count = strtoul(argv[3], &end, 10);
+
         if (end == argv[3] || *end != '\0' ||
             count == 0U || count > MAX_PAYLOAD)
             return 1;
 
         length = (size_t)count;
+
         for (size_t i = 0; i < length; ++i)
             request[i] = (uint8_t)i;
     } else if (strcmp(argv[2], "req") == 0 &&
                argc - 3 <= (int)MAX_PAYLOAD) {
         length = (size_t)(argc - 3);
+
         for (size_t i = 0; i < length; ++i) {
             const char *byte = argv[i + 3];
+
             if (strlen(byte) != 2U ||
                 !isxdigit((unsigned char)byte[0]) ||
                 !isxdigit((unsigned char)byte[1])) {
-                fprintf(stderr, "Use two hex digits per byte: %s\n", byte);
+                fprintf(stderr,
+                        "Use two hex digits per byte: %s\n",
+                        byte);
                 return 1;
             }
+
             request[i] = (uint8_t)strtoul(byte, NULL, 16);
         }
     } else {
@@ -254,14 +263,35 @@ int main(int argc, char **argv)
     }
 
     int fd = open_can(argv[1]);
+
     if (fd < 0) {
         perror("SocketCAN");
         return 1;
     }
 
     int received = -1;
-    if (isotp_send(fd, request, length) == 0)
-        received = isotp_receive(fd, response);
+
+    alarm(300U);
+
+    if (isotp_send(fd, request, length) == 0) {
+        for (;;) {
+            received = isotp_receive(fd, response);
+
+            if (received < 0 || echo)
+                break;
+
+            if (received == 3 &&
+                response[0] == 0x7FU &&
+                response[1] == request[0] &&
+                response[2] == 0x78U) {
+                continue;
+            }
+
+            break;
+        }
+    }
+
+    alarm(0U);
     close(fd);
 
     if (received < 0) {
@@ -275,10 +305,14 @@ int main(int argc, char **argv)
             fprintf(stderr, "Echo data mismatch\n");
             return 1;
         }
+
         printf("ECHO OK: %zu bytes\n", length);
     } else {
         for (int i = 0; i < received; ++i)
-            printf("%s%02X", i == 0 ? "" : " ", (unsigned)response[i]);
+            printf("%s%02X",
+                   i == 0 ? "" : " ",
+                   (unsigned)response[i]);
+
         putchar('\n');
     }
 
